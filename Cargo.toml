@@ -1,0 +1,19 @@
+[package]
+name = "EMDUniFrac"
+version = "0.1.0"
+edition = "2021"
+
+
+[[bin]]
+
+name = "EMDUniFrac"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.94"
+itertools = "0.13.0"
+ndarray = "0.16.1"
+clap = "4.3"
+rayon = "1.10"
+env_logger = { version = "0.11" }
+phylotree = { git = "https://github.com/lucblassel/phylotree-rs" }

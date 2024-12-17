@@ -8,16 +8,16 @@ It uses the [phylotree](https://github.com/lucblassel/phylotree-rs) crate to par
 git clone https://github.com/jianshu93/EMDUniFrac-rs
 cd EMDUniFrac-rs
 cargo build --release
-./target/release/unifrac -h
+./target/release/EMDUniFrac -h
 ```
 
 ## Usage 
 ```bash
  ************** initializing logger *****************
 
-Fast Unweighted UniFrac
+Fast Unweighted UniFrac using EMDUniFrac
 
-Usage: unifrac --tree <TREE_FILE> --input <TABLE_FILE> --output <OUTPUT_FILE>
+Usage: EMDUniFrac --tree <TREE_FILE> --input <TABLE_FILE> --output <OUTPUT_FILE>
 
 Options:
   -t, --tree <TREE_FILE>      Input newick format tree file
@@ -32,7 +32,7 @@ Options:
 ### remove bootstrap support first if you have it
 
 ### Then run unifrac like this:
-unifrac -t data/test_rot_new1.nwk -i data/table.txt -o try.txt
+EMDUniFrac -t data/test_rot_new1.nwk -i data/table.txt -o try.txt
 cat try.txt
 ```
 

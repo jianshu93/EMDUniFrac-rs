@@ -1,9 +1,13 @@
 # EMDUniFrac implementation in Rust
 
 This is an example repo to show how to compute the Earth Mover Distace-based UniFrac distance in Rust. 
-It uses the [phylotree](https://github.com/lucblassel/phylotree-rs) crate to parse the tree file and feature-sample table (OTU table for example) and then compute the EMDUniFrac distance.
+It uses the [phylotree](https://github.com/lucblassel/phylotree-rs) crate to parse the tree file and feature-sample table (OTU table for example) and then compute the EMDUniFrac distance. The code is full parallelized for many samples.
+
+
+
 
 ## Install
+Install Rustup (Rust toolchain) here first: https://rustup.rs
 ```bash
 git clone https://github.com/jianshu93/EMDUniFrac-rs
 cd EMDUniFrac-rs
@@ -15,14 +19,15 @@ cargo build --release
 ```bash
  ************** initializing logger *****************
 
-Fast Unweighted UniFrac using EMDUniFrac
+Fast Earth Mover Distance (EMD) UniFrac
 
-Usage: EMDUniFrac --tree <TREE_FILE> --input <TABLE_FILE> --output <OUTPUT_FILE>
+Usage: EMDUniFrac [OPTIONS] --tree <TREE_FILE> --input <TABLE_FILE> --output <OUTPUT_FILE>
 
 Options:
   -t, --tree <TREE_FILE>      Input newick format tree file
   -i, --input <TABLE_FILE>    Input tab-delimited sample-feature table
   -o, --output <OUTPUT_FILE>  Output file for distance matrix
+      --weighted              Weighted EMDUniFrac
   -h, --help                  Print help
   -V, --version               Print version
 ```
@@ -32,7 +37,7 @@ Options:
 ### remove bootstrap support first if you have it
 
 ### Then run unifrac like this:
-EMDUniFrac -t data/test_rot_new1.nwk -i data/table.txt -o try.txt
+./target/release/EMDUniFrac -t data/test_rot_new1.nwk -i data/table.txt -o try.txt
 cat try.txt
 ```
 

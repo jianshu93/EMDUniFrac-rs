@@ -128,7 +128,7 @@ fn read_sample_table(filename: &str, weighted: bool) -> Result<(Vec<String>, Vec
 
     // First line: parse sample names
     let header = lines.next().context("No header in table")??;
-    let mut hdr_split = header.split_whitespace();
+    let mut hdr_split = header.split('\t');
     hdr_split.next(); // ignore the first element
     let sample_names: Vec<String> = hdr_split.map(|s| s.to_string()).collect();
 

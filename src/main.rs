@@ -15,9 +15,9 @@ fn main() -> Result<()> {
     // Initialize logger
     println!("\n ************** initializing logger *****************\n");
     let _ = env_logger::Builder::from_default_env().init();
-    let matches = Command::new("Unweighted_UniFrac")
+    let matches = Command::new("EMDUniFrac")
         .version("0.1.0")
-        .about("Fast Unweighted UniFrac using EMDUniFrac")
+        .about("Fast Earth Mover Distance (EMD) UniFrac")
         .arg(Arg::new("tree")
             .short('t')
             .long("tree")
@@ -36,17 +36,24 @@ fn main() -> Result<()> {
             .value_name("OUTPUT_FILE")
             .help("Output file for distance matrix")
             .required(true))
+        .arg(
+            Arg::new("weighted")
+                .long("weighted")
+                .action(clap::ArgAction::SetTrue)
+                .help("Weighted EMDUniFrac"),
+        )
         .get_matches();
 
     let tree_file = matches.get_one::<String>("tree").unwrap();
     let table_file = matches.get_one::<String>("table").unwrap();
     let output_file = matches.get_one::<String>("output").unwrap();
+    let weighted = matches.get_flag("weighted");
 
     // Read the tree
     let tree = Tree::from_file(Path::new(tree_file))?;
 
-    // Read and normalize the sample-feature table
-    let (taxa_order, sample_names, mut presence_matrix) = read_sample_table(table_file)?;
+    // Read the sample-feature table
+    let (taxa_order, sample_names, mut presence_matrix) = read_sample_table(table_file, weighted)?;
     normalize_samples(&mut presence_matrix);
     let n_samples = sample_names.len();
 
@@ -69,16 +76,29 @@ fn main() -> Result<()> {
 
     // Compute all pairs in parallel
     let updates: Vec<(usize, usize, f64)> = pairs.par_iter().map(|&(i, j)| {
-        let uni = compute_unifrac_for_pair(
-            &tint,
-            &lint,
-            &nodes_in_order,
-            &leaf_map,
-            &taxa_order,
-            &presence_matrix,
-            i,
-            j
-        ).unwrap();
+        let uni = if weighted {
+            compute_unifrac_for_pair_weighted(
+                &tint,
+                &lint,
+                &nodes_in_order,
+                &leaf_map,
+                &taxa_order,
+                &presence_matrix,
+                i,
+                j
+            ).unwrap()
+        } else {
+            compute_unifrac_for_pair_unweighted(
+                &tint,
+                &lint,
+                &nodes_in_order,
+                &leaf_map,
+                &taxa_order,
+                &presence_matrix,
+                i,
+                j
+            ).unwrap()
+        };
         (i, j, uni)
     }).collect();
 
@@ -100,8 +120,9 @@ fn main() -> Result<()> {
 }
 
 /// Read the sample-feature table.
-/// Any value > 0 is converted to 1.0, else 0.0 for unweighted presence/absence.
-fn read_sample_table(filename: &str) -> Result<(Vec<String>, Vec<String>, Vec<Vec<f64>>)> {
+/// If weighted == false: Any value > 0 is converted to 1.0, else 0.0 (unweighted presence/absence)
+/// If weighted == true: Keep actual values and convert to f64
+fn read_sample_table(filename: &str, weighted: bool) -> Result<(Vec<String>, Vec<String>, Vec<Vec<f64>>)> {
     let f = File::open(filename)?;
     let mut lines = BufReader::new(f).lines();
 
@@ -116,12 +137,18 @@ fn read_sample_table(filename: &str) -> Result<(Vec<String>, Vec<String>, Vec<Ve
 
     for line in lines {
         let line = line?;
-        let mut parts = line.split_whitespace();
+        let mut parts = line.split('\t');
         let taxon = parts.next().context("Taxon missing in a line")?.to_string();
         taxa_order.push(taxon);
         let values: Vec<f64> = parts.map(|x| {
             let val: f64 = x.parse().unwrap_or(0.0);
-            if val > 0.0 {1.0} else {0.0}
+            if weighted {
+                // Keep original val for weighted
+                val
+            } else {
+                // Unweighted presence/absence
+                if val > 0.0 {1.0} else {0.0}
+            }
         }).collect();
         presence_matrix.push(values);
     }
@@ -129,14 +156,15 @@ fn read_sample_table(filename: &str) -> Result<(Vec<String>, Vec<String>, Vec<Ve
     Ok((taxa_order, sample_names, presence_matrix))
 }
 
-/// Normalize each sample so that they form a probability distribution (sum to 1).
+/// Normalize each sample so that they form a probability distribution (sum to 1) if sum>0.
 fn normalize_samples(presence_matrix: &mut [Vec<f64>]) {
     let n_samples = presence_matrix[0].len();
     for s in 0..n_samples {
         let sum: f64 = presence_matrix.iter().map(|row| row[s]).sum();
         if sum > 0.0 {
+            let inv_sum = 1.0 / sum; // Compute the reciprocal of the sum once
             for row in presence_matrix.iter_mut() {
-                row[s] /= sum;
+                row[s] *= inv_sum; // Multiply by the reciprocal, replacing division
             }
         }
     }
@@ -204,11 +232,11 @@ fn build_leaf_map(
     Ok(leaf_map)
 }
 
-/// Compute UniFrac for a given pair of samples i,j using the EMDUnifrac_unweighted logic:
+/// Compute UniFrac for a given pair (unweighted):
 /// - partial_sums at leaves = P - Q
 /// - Propagate up the tree, accumulate Z
-/// - UniFrac = Z
-fn compute_unifrac_for_pair(
+/// - Unifrac = Z
+fn compute_unifrac_for_pair_unweighted(
     tint: &[usize],
     lint: &[f64],
     nodes_in_order: &[usize],
@@ -228,9 +256,9 @@ fn compute_unifrac_for_pair(
             if let Some(&leaf_idx) = leaf_map.get(taxon) {
                 let val_i = presence_matrix[t_idx][i];
                 let val_j = presence_matrix[t_idx][j];
-                // If no difference, skip
-                if (val_i - val_j).abs() > 1e-14 {
-                    Some((leaf_idx, val_i - val_j))
+                let diff = val_i - val_j;
+                if diff.abs() > 1e-14 {
+                    Some((leaf_idx, diff))
                 } else {
                     None
                 }
@@ -244,7 +272,6 @@ fn compute_unifrac_for_pair(
         partial_sums[leaf_idx] = diff;
     }
 
-    // Propagate differences up the tree
     let mut Z = 0.0;
     for node_pos in 0..num_nodes {
         if tint[node_pos] == node_pos {
@@ -254,8 +281,61 @@ fn compute_unifrac_for_pair(
         partial_sums[tint[node_pos]] += val;
         Z += lint[node_pos] * val.abs();
     }
-    let unifrac = Z;
-    Ok(unifrac)
+
+    Ok(Z)
+}
+
+/// Compute UniFrac for a given pair (weighted):
+/// This follows the EMDUnifrac_weighted logic:
+/// partial_sums = P - Q
+/// For each node (except root):
+///   val = partial_sums[node]
+///   partial_sums[ancestor[node]] += val
+///   Z += lint[node]*abs(val)
+fn compute_unifrac_for_pair_weighted(
+    tint: &[usize],
+    lint: &[f64],
+    nodes_in_order: &[usize],
+    leaf_map: &std::collections::HashMap<String, usize>,
+    taxa_order: &[String],
+    presence_matrix: &[Vec<f64>],
+    i: usize,
+    j: usize
+) -> Result<f64> {
+    // Weighted version does the same steps as unweighted, just using the actual abundances.
+    let num_nodes = nodes_in_order.len();
+    let mut partial_sums = vec![0.0; num_nodes];
+
+    // Compute leaf differences
+    let diffs = taxa_order.par_iter()
+        .enumerate()
+        .map(|(t_idx, taxon)| {
+            let val_i = presence_matrix[t_idx][i];
+            let val_j = presence_matrix[t_idx][j];
+            (taxon, val_i - val_j)
+        })
+        .collect::<Vec<(&String, f64)>>();
+
+    // Assign differences to leaves
+    for (taxon, diff) in diffs {
+        if let Some(&leaf_idx) = leaf_map.get(taxon) {
+            partial_sums[leaf_idx] = diff;
+        }
+    }
+
+    // Propagate differences up the tree
+    let mut Z = 0.0;
+    for node_pos in 0..num_nodes {
+        if tint[node_pos] == node_pos {
+            // root
+            continue;
+        }
+        let val = partial_sums[node_pos];
+        partial_sums[tint[node_pos]] += val;
+        Z += lint[node_pos] * val.abs();
+    }
+
+    Ok(Z)
 }
 
 /// Write the resulting matrix to a file

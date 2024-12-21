@@ -7,6 +7,16 @@ It uses the [phylotree](https://github.com/lucblassel/phylotree-rs) crate to par
 
 
 ## Install
+### Quick install
+```bash
+## Linux
+wget https://github.com/jianshu93/EMDUniFrac-rs/releases/download/v0.1.0/EMDUniFrac_Linux_x86-64_v0.1.0.zip
+unzip EMDUniFrac_Linux_x86-64_v0.1.0.zip
+chmod a+x ./EMDUniFrac
+./EMDUniFrac -h
+```
+
+### Compiling
 Install Rustup (Rust toolchain) here first: https://rustup.rs
 ```bash
 git clone https://github.com/jianshu93/EMDUniFrac-rs

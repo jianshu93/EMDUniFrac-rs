@@ -1,0 +1,8 @@
+/Users/jiz322/EMDUniFrac-rs/target/x86_64-apple-darwin/release/deps/liblazy_static-4e33196fbedc9647.rmeta: /Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/lib.rs /Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/inline_lazy.rs
+
+/Users/jiz322/EMDUniFrac-rs/target/x86_64-apple-darwin/release/deps/liblazy_static-4e33196fbedc9647.rlib: /Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/lib.rs /Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/inline_lazy.rs
+
+/Users/jiz322/EMDUniFrac-rs/target/x86_64-apple-darwin/release/deps/lazy_static-4e33196fbedc9647.d: /Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/lib.rs /Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/inline_lazy.rs
+
+/Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/lib.rs:
+/Users/jiz322/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lazy_static-1.5.0/src/inline_lazy.rs:
